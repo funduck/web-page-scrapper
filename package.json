@@ -1,0 +1,15 @@
+{
+  "name": "web_page_scrapper",
+  "version": "1.0.0",
+  "description": "Web page scrapper",
+  "main": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "oomilekh",
+  "license": "ISC",
+  "dependencies": {
+    "casperjs": "^1.1.4"
+  },
+  "devDependencies": {}
+}
