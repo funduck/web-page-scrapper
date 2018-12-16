@@ -4,7 +4,8 @@ var fs = require('fs');
 var SITE = 'http://www.alize.gen.tr';
 var START =  '/index_ru.php?is=hand-knitting-yarn-collection';
 var IMAGES = '/images/';
-var COLORS = '/yeni_site_ru/renkler.php';
+var YARN = '/yeni_site_ru/index.php?is=urun-detay&';
+var COLORS = '/yeni_site_ru/renkler.php?';
 var DOWNLOADS = 'downloads/alize/';
 
 var meta = readMeta();
@@ -50,8 +51,8 @@ function collectDataPageLinks () {
             //&& all[i].innerHTML.match(/ANGORA/) // TEST
         ) {
             var name = a.querySelector('*').innerHTML;
-            var content;
-            var weight;
+            var content = null;
+            var weight = null;
             var p = all[i].querySelectorAll('p');
             for (var j in p) {
                 if (!content && p[j].innerHTML && p[j].innerHTML.match(/\%/)) {
@@ -73,10 +74,12 @@ function collectDataPageLinks () {
 
 function downloadImagesFromPage (pId) {
     return function () {
+        this.echo('downloading images for ' + meta[pId].name);
+
         var images = this.evaluate(function () {
             var els = document.querySelectorAll('a[data-id]');
             var ids = {};
-            for (var i = 0; i < 3 /*els.length*/; i++) { // TEST
+            for (var i = 0; i < els.length; i++) { // TEST
                 ids[els[i].getAttribute('data-id')] = {
                     file: els[i].getAttribute('data-id'),
                     title: els[i].getAttribute('title'),
@@ -95,13 +98,30 @@ function downloadImagesFromPage (pId) {
         for (var i in images) {
             meta[pId].images.push({
                 color: images[i].bilgi,
-                filename: images[i].file
+                filename: pId + '_' + images[i].file
             });
             imgUrl = SITE + IMAGES + images[i].file;
-            fileName = DOWNLOADS + images[i].file;
+            fileName = DOWNLOADS + pId + '_' + images[i].file;
             this.echo('downloading ' + imgUrl + ' to ' + fileName);
             this.download(imgUrl, fileName);
         }
+    }
+};
+
+function downloadInfoFromPage (pId) {
+    return function () {
+        this.echo('fetching info for ' + meta[pId].name);
+
+        meta[pId].info = this.evaluate(function () {
+            var json = {};
+            var els = document.querySelector('#t_teknik').querySelectorAll('.media-body');
+            for (var i = 0; i < els.length; i++) {
+                var name = els[i].querySelector('h5').innerHTML;
+                var value = els[i].querySelector('p').innerHTML;
+                json[name] = value;
+            }
+            return json;
+        });
     }
 };
 
@@ -117,16 +137,28 @@ casper.waitFor(
 
         //this.echo('will download all for links: ' + JSON.stringify(links, null, '  '));
 
-        for (var i = 0; i < 2 /*links.length*/; i++) {  // TEST
+        var count = 0;
+
+        for (var i = 0; i < links.length; i++) {  // TEST
+            // пориции
+            if (count >= 100) {
+                break;
+            }
+
             curId = links[i].id;
             if (!meta[curId]) {
+                count++;
+
                 meta[curId] = {
+                    id: curId,
                     name: links[i].name,
                     content: links[i].content,
                     weight: links[i].weight
                 };
-                this.echo('will download ' + JSON.stringify(links[i], null, '  '));
-                this.thenOpen(SITE + COLORS + '?id=' + curId, function (pId) {
+
+                this.echo('will download ' + links[i].name);
+
+                this.thenOpen(SITE + COLORS + 'id=' + curId, function (pId) {
                     return function () {
                         this.waitFor(
                             checkIsDataPage,
@@ -141,8 +173,24 @@ casper.waitFor(
                         );
                     }
                 }(curId));
+
+                this.thenOpen(SITE + YARN + 'id=' + curId, function (pId) {
+                    return function () {
+                        this.waitFor(
+                            checkIsDataPage,
+                            downloadInfoFromPage(pId),
+                            function () {
+                                this.echo('no required elements found on page ' + pId);
+                                printPage.call(this);
+                                writeMeta(meta);
+                                this.exit();
+                            },
+                            10000
+                        );
+                    }
+                }(curId));
             } else {
-                this.echo('already loaded ' + JSON.stringify(links[i]));
+                this.echo('already loaded ' + links[i].name);
             }
         }
     },

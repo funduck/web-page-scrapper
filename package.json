@@ -9,7 +9,8 @@
   "author": "oomilekh",
   "license": "ISC",
   "dependencies": {
-    "casperjs": "^1.1.4"
+    "casperjs": "^1.1.4",
+    "json2csv": "^4.3.2"
   },
   "devDependencies": {}
 }
