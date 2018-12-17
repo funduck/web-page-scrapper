@@ -1,6 +1,7 @@
 const sharp = require('sharp');
 const meta = require('./downloads/alize/meta.json');
 const downloads = 'downloads/alize'
+const downloads_export = 'downloads/alize_export'
 const when = require('when');
 const fs = require('fs');
 const TextToSVG = require('text-to-svg');
@@ -15,7 +16,7 @@ const processOneYarn = (yarnId) => {
         (i) => i == images.length,
         (i) => {
             const imageFile = images[i].filename;
-            const fout = downloads + '/' + 'with_color_' + imageFile
+            const fout = downloads_export + '/' + 'with_color_' + imageFile
             const color = images[i].color;
             const text = color;
 
